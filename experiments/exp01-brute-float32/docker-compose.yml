@@ -1,0 +1,84 @@
+name: rinha-2026-exp01
+
+# Budget: haproxy 15 + data-prep 25 + 2×api 155 = 350 MB / 1 CPU.
+# data-prep stays in the limit sum because the contest checks the static
+# compose declaration; in practice it exits right after copying the index.
+
+services:
+  data-prep:
+    build:
+      context: ../..
+      dockerfile: experiments/exp01-brute-float32/Dockerfile
+      target: data-prep
+    volumes:
+      - index-data:/shared
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: "25MB"
+
+  api1:
+    build:
+      context: ../..
+      dockerfile: experiments/exp01-brute-float32/Dockerfile
+      target: api
+    environment:
+      LISTEN_ADDR: ":8080"
+      INDEX_PATH: "/data/index.bin"
+      GOMAXPROCS: "1"
+      GOGC: "200"
+    volumes:
+      - index-data:/data:ro
+    depends_on:
+      data-prep:
+        condition: service_completed_successfully
+    networks: [rinha]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.45"
+          memory: "155MB"
+
+  api2:
+    build:
+      context: ../..
+      dockerfile: experiments/exp01-brute-float32/Dockerfile
+      target: api
+    environment:
+      LISTEN_ADDR: ":8080"
+      INDEX_PATH: "/data/index.bin"
+      GOMAXPROCS: "1"
+      GOGC: "200"
+    volumes:
+      - index-data:/data:ro
+    depends_on:
+      data-prep:
+        condition: service_completed_successfully
+    networks: [rinha]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.45"
+          memory: "155MB"
+
+  haproxy:
+    image: haproxy:2.9-alpine
+    depends_on: [api1, api2]
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "9999:9999"
+    networks: [rinha]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: "15MB"
+
+networks:
+  rinha:
+    driver: bridge
+
+volumes:
+  index-data:

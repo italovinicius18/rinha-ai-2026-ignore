@@ -1,0 +1,87 @@
+name: rinha-2026-exp05
+
+# Budget: haproxy 15 + data-prep 25 + 2×api 155 = 350 MB / 1 CPU.
+# IVF C=512: same index size as C=256 (~42 MB), tighter clusters.
+# nprobe=16 searches same vector count as exp04 nprobe=8 (~93k) but from
+# better-partitioned space → expected recall improvement.
+
+services:
+  data-prep:
+    build:
+      context: ../..
+      dockerfile: experiments/exp05-ivf-512/Dockerfile
+      target: data-prep
+    volumes:
+      - index-data:/shared
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: "25MB"
+
+  api1:
+    build:
+      context: ../..
+      dockerfile: experiments/exp05-ivf-512/Dockerfile
+      target: api
+    environment:
+      LISTEN_ADDR: ":8080"
+      INDEX_PATH: "/data/index.bin"
+      NPROBE: "16"
+      GOMAXPROCS: "1"
+      GOGC: "200"
+    volumes:
+      - index-data:/data:ro
+    depends_on:
+      data-prep:
+        condition: service_completed_successfully
+    networks: [rinha]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.45"
+          memory: "155MB"
+
+  api2:
+    build:
+      context: ../..
+      dockerfile: experiments/exp05-ivf-512/Dockerfile
+      target: api
+    environment:
+      LISTEN_ADDR: ":8080"
+      INDEX_PATH: "/data/index.bin"
+      NPROBE: "16"
+      GOMAXPROCS: "1"
+      GOGC: "200"
+    volumes:
+      - index-data:/data:ro
+    depends_on:
+      data-prep:
+        condition: service_completed_successfully
+    networks: [rinha]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.45"
+          memory: "155MB"
+
+  haproxy:
+    image: haproxy:2.9-alpine
+    depends_on: [api1, api2]
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "9999:9999"
+    networks: [rinha]
+    deploy:
+      resources:
+        limits:
+          cpus: "0.05"
+          memory: "15MB"
+
+networks:
+  rinha:
+    driver: bridge
+
+volumes:
+  index-data:

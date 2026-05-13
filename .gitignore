@@ -1,0 +1,9 @@
+# Bundled at build time; do not commit (mirrors upstream rinha-de-backend-2026/resources/).
+resources/references.json.gz
+
+# Build outputs.
+/dist/
+/out/
+*.bin
+/recall-check
+
