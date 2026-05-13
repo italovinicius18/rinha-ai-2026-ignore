@@ -2,7 +2,7 @@ name: rinha-2026-italo
 
 # Submission branch — references pre-built images on Docker Hub.
 # Total budget: haproxy 0.15 + data-prep 0.05 + 2×api 0.40 = 1.00 CPU / 350 MB.
-# IVF-F32 ANN (C=512 centroids, nprobe=8), pure stdlib net/http.
+# IVF-F32 ANN (C=512 centroids, nprobe=6), pure stdlib net/http.
 
 services:
   data-prep:
@@ -20,7 +20,7 @@ services:
     environment:
       LISTEN_ADDR: ":8080"
       INDEX_PATH: "/data/index.bin"
-      NPROBE: "8"
+      NPROBE: "6"
       GOMAXPROCS: "1"
       GOGC: "200"
     volumes:
@@ -40,7 +40,7 @@ services:
     environment:
       LISTEN_ADDR: ":8080"
       INDEX_PATH: "/data/index.bin"
-      NPROBE: "8"
+      NPROBE: "6"
       GOMAXPROCS: "1"
       GOGC: "200"
     volumes:
