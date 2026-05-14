@@ -2,8 +2,9 @@ name: rinha-2026-italo
 
 # Submission branch — references pre-built images on Docker Hub.
 # Total budget: haproxy 0.15 + data-prep 0.05 + 2×api 0.40 = 1.00 CPU / 350 MB.
-# IVF-F32 ANN (C=512 centroids, nprobe=5), pure stdlib net/http.
-# NPROBE sweep on Mac Mini Late 2014: 4=+4929, 5=+5000 (winner), 6=+4392, 8=+3159.
+# IVF-F32 ANN (C=512 centroids), pure stdlib net/http.
+# Adaptive nprobe (NPROBE=5 fast + NPROBE_DEEP=8 on borderline) — new best at +5071.46
+# (#4378). Killed 1 FP + 1 FN vs plain NPROBE=5 baseline (+4995) for ~0.01ms p99 cost.
 
 services:
   data-prep:
@@ -17,11 +18,12 @@ services:
           memory: "25MB"
 
   api1:
-    image: italovinicius18/rinha-2026-api:v1
+    image: italovinicius18/rinha-2026-api:v2-adaptive
     environment:
       LISTEN_ADDR: ":8080"
       INDEX_PATH: "/data/index.bin"
       NPROBE: "5"
+      NPROBE_DEEP: "8"
       GOMAXPROCS: "1"
       GOGC: "200"
     volumes:
@@ -37,11 +39,12 @@ services:
           memory: "155MB"
 
   api2:
-    image: italovinicius18/rinha-2026-api:v1
+    image: italovinicius18/rinha-2026-api:v2-adaptive
     environment:
       LISTEN_ADDR: ":8080"
       INDEX_PATH: "/data/index.bin"
       NPROBE: "5"
+      NPROBE_DEEP: "8"
       GOMAXPROCS: "1"
       GOGC: "200"
     volumes:
